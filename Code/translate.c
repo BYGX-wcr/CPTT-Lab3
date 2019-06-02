@@ -53,7 +53,7 @@ void int_to_char(int num, char* dst);
 char *new_var(char *name);
 char *new_tmp();
 char *new_label();
-char *new_num(char *src);
+char *new_imm(char *src);
 int part_offset(struct FieldList *p, char *name);
 int total_offset(char *name); 
 bool in_paralist(char *name);
@@ -131,7 +131,7 @@ void translate_ExtDef(struct Node *vertex) {
 
 void translate_FunDec(struct Node *vertex) {
     SAFE_ID(vertex, "FunDec");
-    printf("FUNCTION %s :\n", vertex->childs[0]->info);
+    // printf("FUNCTION %s :\n", vertex->childs[0]->info);
     add_code(OT_FUNC, vertex->childs[0]->info, NULL, NULL, NULL);
     memset(paralist, 0, sizeof(paralist)); // initialize paralist when each function begins
 
@@ -153,7 +153,7 @@ void translate_ParamDec(struct Node *vertex) {
     SAFE_ID(vertex->childs[1], "VarDec");
     if(CHECK_ID(vertex->childs[1]->childs[0], "ID")) { // ID 
         char *dst = new_var(vertex->childs[1]->childs[0]->info);
-        printf("PARAM %s \n",dst);
+        // printf("PARAM %s \n",dst);
         add_code(OT_PARAM, dst, NULL, NULL, NULL);
         struct Symbol *p = search_symbol(vertex->childs[1]->childs[0]->info);
         if(p->type->kind == STRUCTURE) {    // store structure for using v2　directly instead of &v2
@@ -212,11 +212,11 @@ void translate_Dec(struct Node *vertex) {
             translate_Exp(vertex->childs[2],src);
             int type = use_addr(vertex->childs[2]);
             if(type == ARRAY || type == STRUCTURE) {    
-                printf("%s := *%s \n", dst, src);
+                // printf("%s := *%s \n", dst, src);
                 add_ch(src, '*');
             }
             else {
-                printf("%s := %s \n", dst, src); 
+                // printf("%s := %s \n", dst, src); 
             }
             add_code(OT_ASSIGN, dst, src, NULL, NULL);
         }
@@ -239,7 +239,7 @@ void translate_VarDec(struct Node *vertex) {
             if((t->kind == ARRAY && t->array.elem_type->kind == BASIC) || t->kind == STRUCTURE) {
                 int space = space_create(t);
                 char *src = new_var(vertex->childs[0]->info);
-                printf("%s %s %d \n", DEC, src, space);
+                // printf("%s %s %d \n", DEC, src, space);
 
                 char *space_char = (char *)malloc(sizeof(char)*ARGNUM);
                 int_to_char(space, space_char);
@@ -270,12 +270,12 @@ void translate_Stmt(struct Node *vertex) {
         translate_Exp(vertex->childs[1], src);
         int type = use_addr(vertex->childs[1]);
         if(type == VAR) {
-            printf("%s %s \n", RETURN, src);
+            // printf("%s %s \n", RETURN, src);
 
             add_code(OT_RET, src, NULL, NULL, NULL);
         }
         else {
-            printf("%s *%s \n", RETURN, src);
+            // printf("%s *%s \n", RETURN, src);
 
             add_ch(src, '*');
             add_code(OT_RET, src, NULL, NULL, NULL);
@@ -289,10 +289,10 @@ void translate_Stmt(struct Node *vertex) {
             char *label_true = new_label();
             char *label_false = new_label();
             translate_Cond(vertex->childs[2], label_true, label_false); // code1
-            printf("%s %s :\n", LABEL, label_true);
+            // printf("%s %s :\n", LABEL, label_true);
             add_code(OT_LABEL, label_true, NULL, NULL, NULL);
             translate_Stmt(vertex->childs[4]); // code2
-            printf("%s %s :\n", LABEL, label_false);
+            // printf("%s %s :\n", LABEL, label_false);
             add_code(OT_LABEL, label_false, NULL, NULL, NULL);
         }
         else if (CHECK_ID(vertex->childs[0], "IF") && CHECK_ID(vertex->childs[6], "Stmt")) { // if else
@@ -300,30 +300,30 @@ void translate_Stmt(struct Node *vertex) {
                 char *label_b = new_label();
                 char *label_c = new_label();
                 translate_Cond(vertex->childs[2], label_a, label_b);
-                printf("%s %s :\n", LABEL, label_a);
+                // printf("%s %s :\n", LABEL, label_a);
                 add_code(OT_LABEL, label_a, NULL, NULL, NULL);
                 translate_Stmt(vertex->childs[4]);
-                printf("%s %s \n", GOTO, label_c);
+                // printf("%s %s \n", GOTO, label_c);
                 add_code(OT_GOTO, label_c, NULL, NULL, NULL);
-                printf("%s %s :\n", LABEL, label_b);
+                // printf("%s %s :\n", LABEL, label_b);
                 add_code(OT_LABEL, label_b, NULL, NULL, NULL);
                 translate_Stmt(vertex->childs[6]);
-                printf("%s %s :\n", LABEL, label_c);
+                // printf("%s %s :\n", LABEL, label_c);
                 add_code(OT_LABEL, label_c, NULL, NULL, NULL);
         }
         else { // while
             char *label_a = new_label();
             char *label_b = new_label();
             char *label_c = new_label();
-            printf("%s %s :\n", LABEL, label_a);
+            // printf("%s %s :\n", LABEL, label_a);
             add_code(OT_LABEL, label_a, NULL, NULL, NULL);
             translate_Cond(vertex->childs[2], label_b, label_c);
-            printf("%s %s :\n", LABEL, label_b);
+            // printf("%s %s :\n", LABEL, label_b);
             add_code(OT_LABEL, label_b, NULL, NULL, NULL);
             translate_Stmt(vertex->childs[4]);
-            printf("%s %s \n", GOTO, label_a);
+            // printf("%s %s \n", GOTO, label_a);
             add_code(OT_GOTO, label_a, NULL, NULL, NULL);
-            printf("%s %s :\n", LABEL, label_c);
+            // printf("%s %s :\n", LABEL, label_c);
             add_code(OT_LABEL, label_c, NULL, NULL, NULL);
         }
     }
@@ -341,7 +341,7 @@ void translate_Exp(struct Node* vertex, char *place) {
         int type = p.type->kind;
         if(type == VAR) {
             char *src = new_var(vertex->childs[0]->info);
-            //printf("%s := %s \n", place, src);
+            //// printf("%s := %s \n", place, src);
             //add_code(OT_ASSIGN, place, src, NULL, NULL);
             memset(place, 0, sizeof(char)*ARGNUM);
             strcpy(place, src);
@@ -351,10 +351,10 @@ void translate_Exp(struct Node* vertex, char *place) {
             struct Symbol *p = search_symbol(vertex->childs[0]->info);
             char *v1 = new_var(vertex->childs[0]->info);
             if(flag) {
-                printf("%s := %s \n", place, v1);
+                // printf("%s := %s \n", place, v1);
             }
             else {
-                printf("%s := &%s \n", place, v1);
+                // printf("%s := &%s \n", place, v1);
                 add_ch(v1, '&');
             }
             //add_code(OT_ASSIGN, place, v1, NULL, NULL);
@@ -367,7 +367,7 @@ void translate_Exp(struct Node* vertex, char *place) {
     else if (CHECK_ID(vertex->childs[0], "INT") || CHECK_ID(vertex->childs[0], "FLOAT")) {
         if(place == NULL) return;
         char *tmp = new_imm(vertex->childs[0]->info);   
-        // printf("%s := %s \n", place, tmp);
+        // // printf("%s := %s \n", place, tmp);
         // add_code(OT_ASSIGN, place, tmp, NULL, NULL);
 
         memset(place, 0, sizeof(char)*ARGNUM);
@@ -382,28 +382,28 @@ void translate_Exp(struct Node* vertex, char *place) {
         if(left == VAR) {
             dst = new_var(vertex->childs[0]->childs[0]->info);     
             if(right == VAR) {
-                printf("%s := %s \n", dst, src);              
+                // printf("%s := %s \n", dst, src);              
             }
             else {
-                printf("%s := *%s \n", dst, src);
+                // printf("%s := *%s \n", dst, src);
                 add_ch(src, '*');
             }
         }
         else {  
             translate_Exp(vertex->childs[0],dst);
             if(right == VAR) {
-                printf("*%s := %s \n", dst, src);
+                // printf("*%s := %s \n", dst, src);
                 add_ch(dst, '*');
             }
             else {
-                printf("*%s := *%s \n", dst, src);
+                // printf("*%s := *%s \n", dst, src);
                 add_ch(dst, '*');
                 add_ch(src, '*');
             }
         }
         add_code(OT_ASSIGN, dst, src, NULL, NULL);
         if(place != NULL) {
-            printf("%s := %s \n", place, dst);
+            // printf("%s := %s \n", place, dst);
             add_code(OT_ASSIGN, place, dst, NULL, NULL);
         }
     }
@@ -412,14 +412,14 @@ void translate_Exp(struct Node* vertex, char *place) {
         
         char *label_true = new_label();
         char *label_false = new_label();
-        printf("%s := %s \n", place, ZERO);
+        // printf("%s := %s \n", place, ZERO);
         add_code(OT_ASSIGN, place, ZERO, NULL, NULL);
         translate_Cond(vertex, label_true, label_false);
-        printf("%s %s :\n", LABEL, label_true);
+        // printf("%s %s :\n", LABEL, label_true);
         add_code(OT_LABEL, label_true, NULL, NULL, NULL);
-        printf("%s := %s\n", place, ONE);
+        // printf("%s := %s\n", place, ONE);
         add_code(OT_ASSIGN, place, ONE, NULL, NULL);
-        printf("%s %s :\n", LABEL, label_false);
+        // printf("%s %s :\n", LABEL, label_false);
         add_code(OT_LABEL, label_false, NULL, NULL, NULL);
     }
     else if (CHECK_ID(vertex->childs[1], "PLUS") || CHECK_ID(vertex->childs[1], "MINUS")
@@ -433,20 +433,20 @@ void translate_Exp(struct Node* vertex, char *place) {
         translate_Exp(vertex->childs[0], dst);
         char *op = vertex->childs[1]->info;
         if(left != VAR && right != VAR) {
-            printf("%s := *%s %s *%s \n", place, dst, op, src);
+            // printf("%s := *%s %s *%s \n", place, dst, op, src);
             add_ch(dst, '*');
             add_ch(src, '*');
         }
         else if(left != VAR && right == VAR) {
-            printf("%s := *%s %s %s \n", place, dst, op, src);
+            // printf("%s := *%s %s %s \n", place, dst, op, src);
             add_ch(dst, '*');
         }
         else if(left == VAR && right != VAR) {
-            printf("%s := %s %s *%s \n", place, dst, op, src);
+            // printf("%s := %s %s *%s \n", place, dst, op, src);
             add_ch(src, '*');
         }
         else {  
-            printf("%s := %s %s %s \n", place, dst, op, src);
+            // printf("%s := %s %s %s \n", place, dst, op, src);
         }
         if(CHECK_ID(vertex->childs[1], "PLUS")) add_code(OT_ADD, dst, src, place, NULL);
         else if(CHECK_ID(vertex->childs[1], "MINUS")) add_code(OT_SUB, dst, src, place, NULL);
@@ -457,14 +457,14 @@ void translate_Exp(struct Node* vertex, char *place) {
         if(place == NULL) return;
         char *src = new_tmp();
         translate_Exp(vertex->childs[1], src);
-        printf("%s := %s - %s \n", place, ZERO, src);
+        // printf("%s := %s - %s \n", place, ZERO, src);
         add_code(OT_SUB, ZERO, src, place, NULL);
     }
     else if(CHECK_ID(vertex->childs[0], "LP") && CHECK_ID(vertex->childs[1], "Exp")) {
         char *src = new_tmp();
         translate_Exp(vertex->childs[1], src);
         if(place != NULL) {
-            printf("%s := %s \n", place, src);
+            // printf("%s := %s \n", place, src);
             add_code(OT_ASSIGN, place, src, NULL, NULL);
         }
     }
@@ -478,14 +478,14 @@ void translate_Exp(struct Node* vertex, char *place) {
             if(!strcmp(vertex->childs[0]->info, "write")) {
                 int type = use_addr(vertex->childs[2]->childs[0]);
                 if(type != VAR) {
-                    printf("%s *%s \n", WRITE, a[0]);
+                    // printf("%s *%s \n", WRITE, a[0]);
                     char *tmp = num2imm(0);
                     strcpy(tmp, a[0]);
                     add_ch(tmp, '*');
                     add_code(OT_WRITE, tmp, NULL, NULL, NULL);
                 }
                 else {
-                    printf("%s %s \n", WRITE, a[0]);
+                    // printf("%s %s \n", WRITE, a[0]);
                     add_code(OT_WRITE, a[0], NULL, NULL, NULL);
                 }
                 return;
@@ -493,18 +493,18 @@ void translate_Exp(struct Node* vertex, char *place) {
             else {
                 for (int i = len - 1; i >= 0; i--) {
                     if(argtype[2*i] != VAR) {
-                        printf("%s %s \n", ARG, a[i]);
+                        // printf("%s %s \n", ARG, a[i]);
                         add_code(OT_ARG, a[i], NULL, NULL, NULL);
                     }
                     else if(argtype[2*i] == VAR && argtype[2*i+1] != VAR) {
-                        printf("%s *%s \n", ARG, a[i]);
+                        // printf("%s *%s \n", ARG, a[i]);
                         char *tmp = num2imm(0);
-                        strcpy(tmp, a[0]);
+                        strcpy(tmp, a[i]);
                         add_ch(tmp, '*');
                         add_code(OT_ARG, tmp, NULL, NULL, NULL);
                     }
                     else if(argtype[2*i] == VAR && argtype[2*i+1] == VAR) {
-                        printf("%s %s \n", ARG, a[i]);
+                        // printf("%s %s \n", ARG, a[i]);
                         add_code(OT_ARG, a[i], NULL, NULL, NULL);
                     }
                     else {
@@ -512,12 +512,12 @@ void translate_Exp(struct Node* vertex, char *place) {
                     }
                 }
                 if(place != NULL) {
-                    printf("%s := %s %s \n", place, CALL, vertex->childs[0]->info);
+                    // printf("%s := %s %s \n", place, CALL, vertex->childs[0]->info);
                     add_code(OT_CALL, place, vertex->childs[0]->info, NULL, NULL);
                 }
                 else {
                     char *t = new_tmp();
-                    printf("%s := %s %s \n", t, CALL, vertex->childs[0]->info);
+                    // printf("%s := %s %s \n", t, CALL, vertex->childs[0]->info);
                     add_code(OT_CALL, t, vertex->childs[0]->info, NULL, NULL);
                 }
             }
@@ -526,8 +526,8 @@ void translate_Exp(struct Node* vertex, char *place) {
             if (!strcmp(vertex->childs[0]->info, "read")) {
                 char *src = new_tmp();
                 if(place != NULL) {
-                    printf("%s %s \n", READ, src);
-                    printf("%s :=  %s \n", place, src);
+                    // printf("%s %s \n", READ, src);
+                    // printf("%s :=  %s \n", place, src);
                     add_code(OT_READ, src, NULL, NULL, NULL);
                     add_code(OT_ASSIGN, place, src, NULL, NULL);
                     return;
@@ -535,12 +535,12 @@ void translate_Exp(struct Node* vertex, char *place) {
             }
             else {
                 if(place != NULL) {
-                    printf("%s := %s %s \n", place, CALL, vertex->childs[0]->info);
+                    // printf("%s := %s %s \n", place, CALL, vertex->childs[0]->info);
                     add_code(OT_CALL, place, vertex->childs[0]->info, NULL, NULL);
                 }
                 else {
                     char *t = new_tmp();
-                    printf("%s := %s %s \n", t, CALL, vertex->childs[0]->info);
+                    // printf("%s := %s %s \n", t, CALL, vertex->childs[0]->info);
                     add_code(OT_CALL, t, vertex->childs[0]->info, NULL, NULL);
                 }
             }
@@ -560,12 +560,12 @@ void translate_Exp(struct Node* vertex, char *place) {
         else {
             char *t3 = new_tmp();
             translate_Exp(vertex->childs[2], t3);
-            printf("%s := *%s \n", t1, t3);
+            // printf("%s := *%s \n", t1, t3);
             add_ch(t3, '*');
             add_code(OT_ASSIGN, t1, t3, NULL, NULL);
         }
         char *num = num2imm(4);
-        printf("%s := %s * #%d \n", t2, t1, 4);
+        // printf("%s := %s * #%d \n", t2, t1, 4);
         add_code(OT_MUL, t1, num, t2, NULL);
 
         if(CHECK_ID(v->childs[0], "ID") && !CHECK_ID(v->childs[1], "LP")) {
@@ -577,7 +577,7 @@ void translate_Exp(struct Node* vertex, char *place) {
                 if(!flag) {
                     add_ch(v1, '&');
                 }
-                printf("%s := %s + %s \n", place, v1, t2);
+                // printf("%s := %s + %s \n", place, v1, t2);
                 add_code(OT_ADD, v1, t2, place, NULL);
             }
 
@@ -588,7 +588,7 @@ void translate_Exp(struct Node* vertex, char *place) {
         else if(CHECK_ID(v->childs[0], "Exp") && CHECK_ID(v->childs[1], "DOT")) {
             char *tmp = new_tmp();
             translate_Exp(v, tmp); // get offset
-            printf("%s := %s + %s \n", place, tmp, t2);
+            // printf("%s := %s + %s \n", place, tmp, t2);
             add_code(OT_ADD, tmp, t2, place, NULL);
         } 
 
@@ -601,11 +601,11 @@ void translate_Exp(struct Node* vertex, char *place) {
         char *num = num2imm(offset);
       
         if(in_paralist(first)) {
-            printf("%s := %s + #%d \n", place, v1, offset);
+            // printf("%s := %s + #%d \n", place, v1, offset);
             add_code(OT_ADD, v1, num, place, NULL);
         }
         else {
-            printf("%s := &%s + #%d \n", place, v1, offset);
+            // printf("%s := &%s + #%d \n", place, v1, offset);
             add_ch(v1, '&');
             add_code(OT_ADD, v1, num, place, NULL);
         }
@@ -619,8 +619,14 @@ void translate_Cond(struct Node *vertex, char *label_true, char *label_false) {
         char *op = vertex->childs[1]->info;
         translate_Exp(vertex->childs[0], t1);
         translate_Exp(vertex->childs[2], t2);
-        printf("%s %s %s %s %s %s\n", IF, t1, op, t2, GOTO, label_true);
-        printf("%s %s\n", GOTO, label_false);
+        if(use_addr(vertex->childs[0])) {
+            add_ch(t1, '*');
+        }
+        if(use_addr(vertex->childs[2])) {
+            add_ch(t2, '*');
+        }
+        // printf("%s %s %s %s %s %s\n", IF, t1, op, t2, GOTO, label_true);
+        // printf("%s %s\n", GOTO, label_false);
         add_code(OT_RELOP, t1, t2, label_true, op);
         add_code(OT_GOTO, label_false, NULL, NULL, NULL);
 
@@ -631,23 +637,26 @@ void translate_Cond(struct Node *vertex, char *label_true, char *label_false) {
     else if(CHECK_ID(vertex->childs[1], "AND")) {
         char *label_tmp = new_label();
         translate_Cond(vertex->childs[0], label_tmp, label_false);
-        printf("%s %s :\n", LABEL, label_tmp);
+        // printf("%s %s :\n", LABEL, label_tmp);
         add_code(OT_LABEL, label_tmp, NULL, NULL, NULL);
         translate_Cond(vertex->childs[2], label_true, label_false);
     }
     else if(CHECK_ID(vertex->childs[1], "OR")) {
         char *label_tmp = new_label();
         translate_Cond(vertex->childs[0], label_true, label_tmp);
-        printf("%s %s :\n", LABEL, label_tmp);
+        // printf("%s %s :\n", LABEL, label_tmp);
         add_code(OT_LABEL, label_tmp, NULL, NULL, NULL);
         translate_Cond(vertex->childs[2], label_true, label_false);
     }
     else {
         char *t1 = new_tmp();
         translate_Exp(vertex, t1);
+        if(use_addr(vertex)) {
+            add_ch(t1, '*');
+        }
         char op[10] = "!=";
-        printf("%s %s %s %s %s %s \n", IF, t1, op, ZERO, GOTO, label_true);
-        printf("%s %s \n", GOTO, label_false);
+        // printf("%s %s %s %s %s %s \n", IF, t1, op, ZERO, GOTO, label_true);
+        // printf("%s %s \n", GOTO, label_false);
         add_code(OT_RELOP, t1, ZERO, label_true, op);
         add_code(OT_GOTO, label_false, NULL, NULL, NULL);
     }
@@ -727,7 +736,7 @@ int part_offset(struct FieldList *p, char *name) {
 int total_offset(char *name) {
     int offset = 0;
     // for(int i = 0;i < struct_label;i++) {
-    //     printf("***** %s \n", structlist[i]);
+    //     // printf("***** %s \n", structlist[i]);
     // }
     struct FieldList *p = search_symbol(structlist[0])->type->structure;
     struct FieldList *q = p;
