@@ -192,10 +192,6 @@ void export_code( FILE* output) {
                 fprintf(output, "ARG %s \n", ptr->left);
                 break;
             }
-            case_OT_ARG_R: {
-                fprintf(output, "ARG *%s \n", ptr->left);
-                break;              
-            }
             case OT_CALL: {
                 fprintf(output, "%s := CALL %s \n", ptr->left, ptr->right);
                 break;

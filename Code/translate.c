@@ -497,15 +497,15 @@ void translate_Exp(struct Node* vertex, char *place) {
                 }
                 return;
             }
-            else {
+            else {  
                 for (int i = len - 1; i >= 0; i--) {
-                    if(argtype[2*i] != VAR) {
+                    if(argtype[2*i] != VAR) {           
                         add_code(OT_ARG, a[i], NULL, NULL, NULL);
                     }
                     else if(argtype[2*i] == VAR && argtype[2*i+1] != VAR) {
                         char *tmp = num2imm(0);
-                        strcpy(tmp, a[0]);
-                        add_ch(tmp, '*');
+                        strcpy(tmp, a[i]);
+                        add_ch(tmp, '*');          
                         add_code(OT_ARG, tmp, NULL, NULL, NULL);
                     }
                     else if(argtype[2*i] == VAR && argtype[2*i+1] == VAR) {
@@ -610,6 +610,12 @@ void translate_Cond(struct Node *vertex, char *label_true, char *label_false) {
         char *op = vertex->childs[1]->info;
         translate_Exp(vertex->childs[0], t1);
         translate_Exp(vertex->childs[2], t2);
+        if(use_addr(vertex->childs[0])) {           // element in array or structure
+            add_ch(t1, '*');
+        }
+        if(use_addr(vertex->childs[2])) {
+            add_ch(t2, '*');
+        }
         add_code(OT_RELOP, t1, t2, label_true, op);
         add_code(OT_GOTO, label_false, NULL, NULL, NULL);
 
@@ -632,6 +638,9 @@ void translate_Cond(struct Node *vertex, char *label_true, char *label_false) {
     else {
         char *t1 = new_tmp();
         translate_Exp(vertex, t1);
+        if(use_addr(vertex)) {                  // element in array or structure
+            add_ch(t1, '*');
+        }
         char op[10] = "!=";
         add_code(OT_RELOP, t1, ZERO, label_true, op);
         add_code(OT_GOTO, label_false, NULL, NULL, NULL);
